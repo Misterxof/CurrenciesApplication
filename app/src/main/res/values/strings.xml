@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">CurrenciesApplication</string>
+    <string name="header_favorite">Favorites</string>
+    <string name="header_currencies">Currencies</string>
+    <string name="header_filters">Filters</string>
+    <string name="no_fav">There are no favorite tariffs selected yet</string>
+    <string name="no_connection">There are no internet connection</string>
+    <string name="error">Something went wrong</string>
+    <string name="apply">Apply</string>
+</resources>

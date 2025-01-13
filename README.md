@@ -1,0 +1,2 @@
+# CurrenciesApplication
+ Currencies rates app
