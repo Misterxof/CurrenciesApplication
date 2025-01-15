@@ -14,7 +14,7 @@ class MainViewModel @Inject constructor() : ViewModel() {
     private val _effect = Channel<ViewSideEffect>()
     val effect: ReceiveChannel<ViewSideEffect> = _effect
 
-    open fun setEffect(effect: MainContract.Effect) {
+    fun setEffect(effect: MainContract.Effect) {
         viewModelScope.launch {
             _effect.send(effect)
         }

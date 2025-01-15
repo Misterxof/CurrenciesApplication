@@ -16,9 +16,5 @@ class FavoritesContract {
         data object GetFavorites : Intent()
     }
 
-    sealed class Effect() : ViewSideEffect {
-        sealed class Navigation : Effect() {
-            data object NavigateCurrencies : Navigation()
-        }
-    }
+    sealed class Effect() : ViewSideEffect {}
 }

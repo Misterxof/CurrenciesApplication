@@ -52,7 +52,7 @@ class MainModule {
         okHttpClient: OkHttpClient
     ): CurrenciesService {
         return Retrofit.Builder()
-            .baseUrl("https://api.apilayer.com/")
+            .baseUrl("http://192.168.0.109:8080/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

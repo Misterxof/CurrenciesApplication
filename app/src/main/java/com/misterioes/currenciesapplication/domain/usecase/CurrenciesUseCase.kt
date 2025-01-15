@@ -6,16 +6,20 @@ import com.misterioes.currenciesapplication.domain.model.Filter
 import com.misterioes.currenciesapplication.domain.model.Rate
 import com.misterioes.currenciesapplication.domain.model.Result
 import com.misterioes.currenciesapplication.domain.repository.CurrenciesRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class CurrenciesUseCase @Inject constructor(private val repository: CurrenciesRepository) {
-    var selectedFilter: Filter
     val allCurrencies = Currencies.entries.map { it.name }
-    var selectedCurrencyChooser = Currencies.USD
-    var currentCurrency: Currency? = null
 
     private val filters = listOf(
         Filter("Code A-Z", true) { it.sortedBy { it.symbol } },
@@ -24,8 +28,13 @@ class CurrenciesUseCase @Inject constructor(private val repository: CurrenciesRe
         Filter("Quote Desc.", false) { it.sortedByDescending { it.rate } },
     )
 
-    init {
-        selectedFilter = filters[0]
+    private val _filter = MutableStateFlow<Filter>(filters[0])
+    val filter = _filter.asStateFlow()
+
+    fun setFilter(filter: Filter) {
+        CoroutineScope(Job() + Dispatchers.IO).launch {
+            _filter.emit(filter)
+        }
     }
 
     fun getFilters(): List<Filter> {

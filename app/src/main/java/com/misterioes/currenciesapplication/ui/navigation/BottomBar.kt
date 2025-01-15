@@ -24,7 +24,6 @@ import com.misterioes.currenciesapplication.ui.theme.Secondary
 
 @Composable
 fun BottomBar(
-    navController: NavController,
     navBackStackEntry: NavBackStackEntry?,
     onNavigationRequested: (navigationEffect: MainContract.Effect) -> Unit
 ) {

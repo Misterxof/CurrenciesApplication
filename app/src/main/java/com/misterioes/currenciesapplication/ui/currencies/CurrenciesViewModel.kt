@@ -1,9 +1,12 @@
 package com.misterioes.currenciesapplication.ui.currencies
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.viewModelScope
 import com.misterioes.currenciesapplication.domain.combineAndAwait
 import com.misterioes.currenciesapplication.domain.model.Currencies
+import com.misterioes.currenciesapplication.domain.model.Filter
 import com.misterioes.currenciesapplication.domain.model.Rate
 import com.misterioes.currenciesapplication.domain.model.Result
 import com.misterioes.currenciesapplication.domain.usecase.CurrenciesUseCase
@@ -11,15 +14,17 @@ import com.misterioes.currenciesapplication.ui.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class CurrenciesViewModel @Inject constructor(private val currenciesUseCase: CurrenciesUseCase) :
-    BaseViewModel<CurrenciesContract.Intent, CurrenciesContract.State, CurrenciesContract.Effect>() {
+class CurrenciesViewModel @Inject constructor(private val currenciesUseCase: CurrenciesUseCase) : BaseViewModel<CurrenciesContract.Intent, CurrenciesContract.State, CurrenciesContract.Effect>() {
+
     init {
-        getCurrency()
+        setIntent(CurrenciesContract.Intent.GetCurrency(Currencies.USD))
         setIntent(CurrenciesContract.Intent.GetAllCurrencies)
+        getFilter()
     }
 
     override fun initialState(): CurrenciesContract.State {
@@ -46,7 +51,20 @@ class CurrenciesViewModel @Inject constructor(private val currenciesUseCase: Cur
     private fun retryConnection() {
         viewModelScope.launch {
             delay(5000)
-            getCurrency()
+            setIntent(CurrenciesContract.Intent.GetCurrency(Currencies.USD))
+        }
+    }
+
+    private fun getFilter() {
+        viewModelScope.launch {
+            currenciesUseCase.filter.collect {
+                setState { copy(filter = it) }
+                if(state.value.rates.isNotEmpty()) {
+                    val rates = state.value.filter!!.sortFunction(state.value.rates)
+                    val list = mutableStateListOf<Rate>().apply { addAll(rates) }
+                    setState { copy(rates = list) }
+                }
+            }
         }
     }
 
@@ -55,45 +73,17 @@ class CurrenciesViewModel @Inject constructor(private val currenciesUseCase: Cur
         setState { copy(allCurrencies = currencies) }
     }
 
-    private fun getCurrency() {
-        if (currenciesUseCase.currentCurrency == null) {
-            setIntent(CurrenciesContract.Intent.GetCurrency(Currencies.USD))
-        } else {
-            viewModelScope.launch(Dispatchers.IO) {
-                currenciesUseCase.getFavorites().collect { favorites ->
-                    val srList =
-                        currenciesUseCase.selectedFilter.sortFunction(currenciesUseCase.currentCurrency!!.rates.toList())
-
-                    if (favorites.isNotEmpty()) {
-                        for (i in srList.indices) {
-                            if (favorites.find { fav -> fav.base == srList[i].base && fav.symbol == srList[i].symbol } == null) {
-                                srList[i].selected = false
-                            } else {
-                                srList[i].selected = true
-                            }
-                        }
-                    } else
-                        srList.map { it.selected = false }
-
-                    val list = mutableStateListOf<Rate>().apply { addAll(srList) }
-
-                    setState {
-                        copy(
-                            isLoading = false,
-                            currency = currenciesUseCase.currentCurrency,
-                            selectedItem = currenciesUseCase.currentCurrency!!.base,
-                            rates = list,
-                            filter = currenciesUseCase.selectedFilter,
-                            error = null
-                        )
-                    }
+    private fun updateCurrencyWitFavorites(favorites: List<Rate>, rates: List<Rate>) {
+        if (favorites.isNotEmpty()) {
+            for (i in rates.indices) {
+                if (favorites.find { fav -> fav.base == rates[i].base && fav.symbol == rates[i].symbol } == null) {
+                    rates[i].selected = false
+                } else {
+                    rates[i].selected = true
                 }
             }
-        }
-    }
-
-    private fun getCurrency(currency: Currencies) {
-        getListWithFavs(currency)
+        } else
+            rates.map { it.selected = false }
     }
 
     private fun setStateCurrency(result: Result.Success, list: List<Rate>) {
@@ -104,14 +94,12 @@ class CurrenciesViewModel @Inject constructor(private val currenciesUseCase: Cur
                 currency = result.currency,
                 selectedItem = result.currency.base,
                 rates = list,
-                filter = currenciesUseCase.selectedFilter,
                 error = null
             )
         }
-        currenciesUseCase.currentCurrency = result.currency
     }
 
-    private fun getListWithFavs(currency: Currencies) {
+    private fun getCurrency(currency: Currencies) {
         viewModelScope.launch(Dispatchers.IO) {
             combineAndAwait(
                 currenciesUseCase.getCurrency(currency),
@@ -120,16 +108,9 @@ class CurrenciesViewModel @Inject constructor(private val currenciesUseCase: Cur
                 when (result) {
                     is Result.Success -> {
                         val srList =
-                            currenciesUseCase.selectedFilter.sortFunction(result.currency.rates.toList())
-                        if (favorites.isNotEmpty()) {
-                            for (i in srList.indices) {
-                                if (favorites.find { fav -> fav.base == srList[i].base && fav.symbol == srList[i].symbol } == null)
-                                    srList[i].selected = false
-                                else srList[i].selected = true
-                            }
-                        } else
-                            srList.map { it.selected = false }
+                            state.value.filter!!.sortFunction(result.currency.rates.toList())
 
+                        updateCurrencyWitFavorites(favorites, srList)
                         setStateCurrency(result, srList)
                     }
 

@@ -27,11 +27,5 @@ class CurrenciesContract {
         data class AddCurrencyToFavorites(val rate: Rate) : Intent()
     }
 
-    sealed class Effect() : ViewSideEffect {
-        sealed class Navigation : Effect() {
-            data object NavigateFilters : Navigation()
-            data object NavigateCurrencies : Navigation()
-            data object NavigateFavorite : Navigation()
-        }
-    }
+    sealed class Effect() : ViewSideEffect {}
 }

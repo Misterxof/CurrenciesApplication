@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.misterioes.currenciesapplication.ui.main.MainContract
@@ -57,7 +58,7 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         bottomBar = {
                             if (navBackStackEntry?.destination?.route != Screen.FiltersScreen.route) {
-                                BottomBar(navController, navBackStackEntry) { effect ->
+                                BottomBar(navBackStackEntry) { effect ->
                                     viewModel.setEffect(effect)
                                 }
                             }
@@ -78,15 +79,30 @@ class MainActivity : ComponentActivity() {
                                 MainContract.Effect.Navigation.NavigateBack -> navController.popBackStack()
                                 MainContract.Effect.Navigation.NavigateCurrencies -> navController.navigate(
                                     Screen.CurrenciesScreen.route
-                                )
+                                ) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                }
 
                                 MainContract.Effect.Navigation.NavigateFavorite -> navController.navigate(
                                     Screen.FavoritesScreen.route
-                                )
+                                ) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                }
 
                                 MainContract.Effect.Navigation.NavigateFilters -> navController.navigate(
                                     Screen.FiltersScreen.route
-                                )
+                                ) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                }
                             }
                         }
                     }

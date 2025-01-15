@@ -1,9 +1,11 @@
 package com.misterioes.currenciesapplication.ui.feature.filters
 
+import androidx.lifecycle.viewModelScope
 import com.misterioes.currenciesapplication.domain.model.Filter
 import com.misterioes.currenciesapplication.domain.usecase.CurrenciesUseCase
 import com.misterioes.currenciesapplication.ui.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,8 +30,11 @@ class FiltersViewModel @Inject constructor(private val currenciesUseCase: Curren
 
     private fun getFilters() {
         val filters = currenciesUseCase.getFilters()
-        val selectedFilter = currenciesUseCase.selectedFilter
-        setState { copy(isLoading = false, filters = filters, selectedFilter = selectedFilter) }
+        viewModelScope.launch {
+            currenciesUseCase.filter.collect {
+                setState { copy(isLoading = false, filters = filters, selectedFilter = it) }
+            }
+        }
     }
 
     private fun setFilter(filter: Filter) {
@@ -38,7 +43,7 @@ class FiltersViewModel @Inject constructor(private val currenciesUseCase: Curren
 
     private fun applyFilter() {
         state.value.selectedFilter?.let { filter ->
-            currenciesUseCase.selectedFilter = filter
+            currenciesUseCase.setFilter(filter)
             sendEffect { FiltersContract.Effect.ShowFilter(filter.text) }
         }
     }
